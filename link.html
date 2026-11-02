@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f8fc">
+<title>MediCore — Emergency Care Dashboard</title>
+<style>
+:root{--ink:#172b4d;--muted:#71809a;--line:#e6ebf2;--bg:#f5f8fc;--white:#fff;--blue:#246bfd;--navy:#152b4d;--teal:#20a88a;--red:#df5c63;--amber:#df9a28;--shadow:0 8px 28px rgba(28,50,85,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app-shell{display:flex;min-height:100vh}
+.sidebar{width:236px;background:#fff;border-right:1px solid var(--line);padding:25px 16px 18px;display:flex;flex-direction:column;flex-shrink:0}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--ink);padding:0 9px 36px}
+.brand-mark{width:38px;height:38px;border-radius:12px;background:#eaf1ff;color:var(--blue);display:grid;place-items:center;font-size:22px}
+.brand b{display:block;font-size:16px;letter-spacing:-.3px}
+.brand small{display:block;color:var(--muted);font-size:11px}
+.nav-label,.eyebrow{font-size:10px;letter-spacing:1.15px;font-weight:750;color:#91a0b7}
+.nav-label{padding:0 12px 10px}
+.nav-item{width:100%;display:flex;gap:12px;align-items:center;border:0;background:transparent;color:#687993;border-radius:9px;padding:11px 12px;margin:2px 0;text-align:left;font-weight:600}
+.nav-item span{width:19px;text-align:center;font-size:17px}
+.nav-item:hover,.nav-item.active{background:#edf3ff;color:var(--blue)}
+.sidebar-bottom{margin-top:auto}
+.local-note{display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding:20px 8px 12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#3db88d}
+.local-note b,.local-note small{display:block}
+.local-note b{font-size:12px}
+.local-note small{font-size:11px;color:var(--muted)}
+.reset-link{border:0;background:none;color:#8a97aa;font-size:12px;padding:9px}
+.main-area{max-width:1600px;width:100%;padding:28px 38px 50px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.topbar h1{font-size:25px;letter-spacing:-.6px;margin:1px 0 0}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.date-pill{color:#65758e;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:12px}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#dce8ff;color:var(--blue);font-size:11px;font-weight:750}
+.notice{display:flex;gap:9px;align-items:center;background:#eef5ff;color:#58708e;border:1px solid #dce9fb;padding:10px 13px;border-radius:9px;font-size:12px;margin-bottom:21px}
+.notice>span:first-child{color:var(--blue);font-size:15px}
+.notice b{color:#36557d}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:7px 0 17px}
+.page-head h2{font-size:16px;margin:0 0 2px}
+.page-head p{margin:0;color:var(--muted);font-size:12px}
+.button{border:1px solid var(--line);background:#fff;color:#445875;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:650}
+.button:hover{background:#f6f8fc}
+.button.primary{background:var(--blue);border-color:var(--blue);color:white;box-shadow:0 4px 10px #246bfd2e}
+.button.danger{color:var(--red)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card,.panel,.table-card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.stat-card{padding:17px 18px;min-height:118px}
+.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+.stat-icon{width:32px;height:32px;border-radius:9px;background:#eff4ff;color:var(--blue);display:grid;place-items:center;font-size:16px}
+.stat-value{font-size:27px;letter-spacing:-.8px;font-weight:720;margin:7px 0 0}
+.stat-foot{font-size:11px;color:#9aa7b8}
+.dashboard-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+.panel{padding:17px}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.panel-header h3{margin:0;font-size:14px}
+.panel-header a{color:var(--blue);font-size:11px;text-decoration:none;font-weight:650}
+.table-card{overflow:hidden}
+.table-wrap{overflow:auto}
+table{border-collapse:collapse;width:100%;text-align:left;white-space:nowrap}
+th{background:#f8fafd;color:#8492a7;text-transform:uppercase;letter-spacing:.65px;font-size:9px;font-weight:750;padding:11px 13px;border-bottom:1px solid var(--line)}
+td{padding:12px 13px;border-bottom:1px solid #eef1f5;color:#465974;font-size:11px}
+tbody tr:last-child td{border-bottom:0}
+.patient-name{font-weight:650;color:#263c5b}
+.subtle{display:block;font-size:10px;color:#95a1b2}
+.badge{display:inline-block;border-radius:20px;padding:4px 8px;font-size:10px;font-weight:680}
+.badge.green{background:#e8f7f1;color:#23946d}
+.badge.blue{background:#edf3ff;color:#3972dc}
+.badge.amber{background:#fff5e3;color:#b47b1d}
+.badge.red{background:#fff0ef;color:#cc5153}
+.badge.gray{background:#f0f2f5;color:#748197}
+.activity{display:grid;gap:15px}
+.activity-item{display:flex;gap:11px;align-items:flex-start}
+.activity-icon{width:29px;height:29px;flex-shrink:0;border-radius:9px;background:#edf4ff;color:var(--blue);display:grid;place-items:center;font-size:13px}
+.activity-item b{font-size:11px;display:block}
+.activity-item small{font-size:10px;color:#92a0b2;display:block}
+.empty{padding:28px;text-align:center;color:#8b99ab;font-size:12px}
+.toolbar{display:flex;gap:9px;align-items:center;margin-bottom:13px}
+.search{max-width:310px;flex:1;position:relative}
+.search input,.field input,.field select,.field textarea{width:100%;border:1px solid #dfe5ed;border-radius:8px;background:#fff;color:var(--ink);padding:9px 11px;outline:0}
+.search input{padding-left:32px}
+.search:before{content:"⌕";position:absolute;left:11px;top:5px;color:#94a1b2;font-size:19px}
+.field input:focus,.field select:focus,.field textarea:focus,.search input:focus{border-color:#8bb0ff;box-shadow:0 0 0 3px #246bfd15}
+.field label{display:block;font-size:11px;color:#5c6f89;font-weight:650;margin:0 0 5px}
+.field{margin-bottom:12px}
+.field textarea{resize:vertical;min-height:70px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.field.full{grid-column:1/-1}
+.modal-backdrop{position:fixed;inset:0;background:#13254166;display:grid;place-items:center;padding:18px;z-index:5}
+.modal{width:min(530px,100%);background:white;border-radius:14px;padding:21px;box-shadow:0 20px 70px #10284b40;max-height:90vh;overflow:auto}
+.modal h2{margin:0;font-size:17px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.close{background:none;border:0;color:#8996a7;font-size:22px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.toast{position:fixed;bottom:22px;right:24px;background:#183657;color:white;padding:11px 15px;border-radius:9px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none;font-size:12px;z-index:10}
+.toast.show{opacity:1;transform:none}
+.risk-note{color:#9a711e;background:#fff8e9;padding:9px 10px;border-radius:8px;font-size:11px;margin-bottom:13px}
+.analytics{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bar-row{display:grid;grid-template-columns:105px 1fr 28px;align-items:center;gap:9px;margin:13px 0;font-size:11px;color:#62738b}
+.bar{height:8px;border-radius:10px;background:#edf1f6;overflow:hidden}
+.bar i{height:100%;display:block;background:var(--blue);border-radius:10px}
+.kpi{display:flex;gap:20px}
+.kpi div{padding-right:20px;border-right:1px solid var(--line)}
+.kpi div:last-child{border:0}
+.kpi b{font-size:21px;display:block}
+.kpi span{font-size:10px;color:var(--muted)}
+.quick-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:1000px){.stats-grid{grid-template-columns:repeat(2,1fr)}.main-area{padding:24px}.sidebar{width:205px}}
+@media(max-width:720px){.sidebar{width:62px;padding:18px 7px}.brand{padding:0 4px 24px}.brand>span:last-child,.nav-label,.nav-item:not(.active){font-size:0}.nav-item{justify-content:center;padding:11px 6px}.nav-item span{font-size:17px}.sidebar-bottom{overflow:hidden}.local-note{padding:16px 5px}.local-note div,.reset-link{display:none}.main-area{padding:18px 14px}.dashboard-grid,.analytics{grid-template-columns:1fr}.topbar h1{font-size:21px}.date-pill{display:none}.stats-grid{gap:9px}.stat-card{padding:13px;min-height:105px}.stat-value{font-size:24px}.toolbar{flex-wrap:wrap}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#dashboard">
+      <span class="brand-mark">✚</span>
+      <span><b>MediCore</b><small>Emergency care</small></span>
+    </a>
+    <div class="nav-label">WORKSPACE</div>
+    <nav id="navigation">
+      <button class="nav-item active" data-page="dashboard"><span>▦</span> Overview</button>
+      <button class="nav-item" data-page="patients"><span>♙</span> Patients</button>
+      <button class="nav-item" data-page="triage"><span>♥</span> Triage</button>
+      <button class="nav-item" data-page="doctors"><span>⚕</span> Doctors</button>
+      <button class="nav-item" data-page="treatments"><span>✚</span> Treatment</button>
+      <button class="nav-item" data-page="billing"><span>▤</span> Billing</button>
+      <button class="nav-item" data-page="reports"><span>▥</span> Reports</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-note"><span class="dot"></span><div><b>Local demo</b><small>Saved in this browser</small></div></div>
+      <button id="resetButton" class="reset-link">↻ Reset demo data</button>
+    </div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><div class="eyebrow">EMERGENCY ROOM</div><h1 id="pageTitle">Overview</h1></div>
+      <div class="topbar-right"><span class="date-pill" id="today"></span><div class="avatar">MC</div></div>
+    </header>
+    <section class="notice"><span>ⓘ</span><span><b>Demo application.</b> Information is stored only in this browser. This is not a clinical triage or medical decision system.</span></section>
+    <div id="pageContent"></div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toast" class="toast" role="status"></div>
+<script>
+const KEY='medicore-demo-v1';
+const seed={
+  patients:[{patientId:109,patientName:'Ram Kumar',age:30,gender:'Male',bloodGroup:'O+',mobileNumber:'9876543210',createdAt:new Date().toISOString()}],
+  doctors:[
+    {id:1,name:'Dr. Ananya Rao',specialty:'Emergency medicine',phone:'9876501234',available:true},
+    {id:2,name:'Dr. Kabir Shah',specialty:'General medicine',phone:'9876502345',available:true}
+  ],
+  triage:[],treatments:[],bills:[]
+};
+let db=load();
+let page='dashboard';
+let toastTimer;
+
+function load(){
+  try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}
+  catch{return structuredClone(seed)}
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function esc(v=''){
+  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
+function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+function today(){
+  return new Intl.DateTimeFormat('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(new Date())
+}
+document.getElementById('today').textContent=today();
+document.getElementById('navigation').addEventListener('click',e=>{
+  const b=e.target.closest('[data-page]');
+  if(b)go(b.dataset.page)
+});
+document.getElementById('resetButton').addEventListener('click',()=>{
+  if(confirm('Reset all MediCore demo records in this browser?')){
+    db=structuredClone(seed);
+    save();
+    notify('Demo data has been reset.')
+  }
+});
+function go(p){
+  page=p;
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===p));
+  render();
+  window.scrollTo(0,0)
+}
+function notify(s){
+  const t=document.getElementById('toast');
+  t.textContent=s;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2400)
+}
+function patient(id){return db.patients.find(x=>x.patientId===Number(id))}
+function person(p){
+  return p?`<span class="patient-name">${esc(p.patientName)}</span><span class="subtle">ID ${p.patientId}</span>`:'<span class="subtle">Unknown patient</span>'
+}
+function status(s){
+  let c={Critical:'red',Urgent:'amber',Routine:'green',Open:'amber',Paid:'green',Assigned:'blue',Completed:'green'}[s]||'gray';
+  return `<span class="badge ${c}">${esc(s)}</span>`
+}
+function pageHead(title,sub,button=''){
+  return `<div class="page-head"><div><h2>${title}</h2><p>${sub}</p></div>${button}</div>`
+}
+function table(headers,rows,empty='No records yet.'){
+  return `<div class="table-card"><div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}"><div class="empty">${empty}</div></td></tr>`}</tbody></table></div></div>`
+}
+function render(){
+  document.getElementById('pageTitle').textContent={
+    dashboard:'Overview',patients:'Patients',triage:'Triage assessment',
+    doctors:'Doctor management',treatments:'Emergency treatment',
+    billing:'Billing',reports:'Reports & analytics'
+  }[page];
+  document.getElementById('pageContent').innerHTML=({
+    dashboard:dashboardPage,patients:patientsPage,triage:triagePage,
+    doctors:doctorsPage,treatments:treatmentsPage,billing:billingPage,
+    reports:reportsPage
+  }[page])()
+}
+function stat(label,val,icon,foot='In this browser'){
+  return `<div class="stat-card"><div class="stat-top">${label}<span class="stat-icon">${icon}</span></div><div class="stat-value">${val}</div><div class="stat-foot">${foot}</div></div>`
+}
+function dashboardPage(){
+  let active=db.triage.filter(t=>t.status!=='Completed').length;
+  let paid=db.bills.filter(b=>b.status==='Paid').reduce((s,b)=>s+Number(b.amount),0);
+  let recent=[...db.triage].reverse().slice(0,5).map(t=>`<tr><td>${person(patient(t.patientId))}</td><td>${status(t.priority)}</td><td>${esc(t.complaint)}</td><td>${new Date(t.createdAt).toLocaleDateString()}</td></tr>`).join('');
+  let activity=[...db.treatments].reverse().slice(0,4).map(t=>`<div class="activity-item"><span class="activity-icon">✚</span><div><b>Treatment ${esc(t.status.toLowerCase())} · ${esc(patient(t.patientId)?.patientName||'Patient')}</b><small>${esc(t.description)} · ${new Date(t.createdAt).toLocaleString()}</small></div></div>`).join('');
+  return `${pageHead('Emergency room at a glance','Manage demo patient records and workflows.','<button class="button primary" onclick="openPatient()">＋ Register patient</button>')}
+  <div class="stats-grid">
+    ${stat('Registered patients',db.patients.length,'♙')}
+    ${stat('Waiting triage',active,'♥','Open demo assessments')}
+    ${stat('Doctors on roster',db.doctors.length,'⚕')}
+    ${stat('Paid bills',money(paid),'₹','Recorded locally')}
+  </div>
+  <div class="dashboard-grid">
+    <section class="panel">
+      <div class="panel-header"><h3>Recent triage queue</h3><a href="#" onclick="go('triage');return false">View queue →</a></div>
+      ${table(['Patient','Priority','Concern','Date'],recent,'No triage records. Add a demo assessment to get started.')}
+    </section>
+    <section class="panel">
+      <div class="panel-header"><h3>Recent activity</h3><span class="subtle">Latest updates</span></div>
+      <div class="activity">${activity||'<div class="empty">Activity will appear here as you record treatments.</div>'}</div>
+    </section>
+  </div>
+  <section class="panel" style="margin-top:16px">
+    <div class="panel-header"><h3>Quick actions</h3><span class="subtle">Choose a workflow</span></div>
+    <div class="quick-actions">
+      <button class="button" onclick="openPatient()">＋ Register patient</button>
+      <button class="button" onclick="go('triage')">♥ New triage</button>
+      <button class="button" onclick="go('doctors')">⚕ Add doctor</button>
+      <button class="button" onclick="go('billing')">▤ Create bill</button>
+    </div>
+  </section>`
+}
+function patientsPage(){
+  let rows=db.patients.map(p=>`<tr><td>${person(p)}</td><td>${p.age}</td><td>${esc(p.gender)}</td><td>${esc(p.bloodGroup)}</td><td>${esc(p.mobileNumber)}</td><td><button class="button" onclick="editPatient(${p.patientId})">Edit</button></td></tr>`).join('');
+  return `${pageHead('Patient records','Register and update the patient details from the Java example.','<button class="button primary" onclick="openPatient()">＋ Register patient</button>')}
+  <div class="toolbar"><div class="search"><input id="patientSearch" placeholder="Search name, ID, or phone…" oninput="filterRows(this,'patientsTable')"></div><span class="subtle">${db.patients.length} records</span></div>
+  <div id="patientsTable">${table(['Patient','Age','Gender','Blood group','Mobile','Actions'],rows,'No patients registered yet.')}</div>`
+}
+function options(){
+  return `<option value="">Select patient</option>${db.patients.map(p=>`<option value="${p.patientId}">${esc(p.patientName)} · ${p.patientId}</option>`).join('')}`
+}
+function triagePage(){
+  let rows=[...db.triage].reverse().map(t=>`<tr><td>${person(patient(t.patientId))}</td><td>${status(t.priority)}</td><td>${esc(t.complaint)}</td><td>${esc(t.notes||'—')}</td><td>${new Date(t.createdAt).toLocaleString()}</td><td><button class="button" onclick="completeTriage(${t.id})">${t.status==='Completed'?'Done':'Complete'}</button></td></tr>`).join('');
+  return `${pageHead('Triage assessment','Record a simple, user-entered priority for demonstration only.','<button class="button primary" onclick="openTriage()">＋ Add assessment</button>')}
+  <div class="risk-note">This form does not assess medical urgency. A real person must determine care priority; do not use this demo for clinical decisions.</div>
+  ${table(['Patient','Priority (entered)','Complaint','Notes','Recorded','Queue'],rows,'No triage assessments recorded.')}`
+}
+function doctorsPage(){
+  let rows=db.doctors.map(d=>`<tr><td><span class="patient-name">${esc(d.name)}</span><span class="subtle">${esc(d.specialty)}</span></td><td>${esc(d.phone||'—')}</td><td>${status(d.available?'Available':'Unavailable')}</td><td><button class="button" onclick="toggleDoctor(${d.id})">Toggle status</button></td></tr>`).join('');
+  return `${pageHead('Doctor roster','Add doctors and assign them to treatment records.','<button class="button primary" onclick="openDoctor()">＋ Add doctor</button>')}
+  ${table(['Doctor','Contact','Status','Actions'],rows,'No doctors on the roster.')}`
+}
+function treatmentsPage(){
+  let rows=[...db.treatments].reverse().map(t=>`<tr><td>${person(patient(t.patientId))}</td><td>${esc(t.description)}</td><td>${esc(db.doctors.find(d=>d.id===Number(t.doctorId))?.name||'Unassigned')}</td><td>${status(t.status)}</td><td>${new Date(t.createdAt).toLocaleString()}</td><td><button class="button" onclick="completeTreatment(${t.id})">${t.status==='Completed'?'Done':'Complete'}</button></td></tr>`).join('');
+  return `${pageHead('Emergency treatment','Log a treatment and optionally assign an available doctor.','<button class="button primary" onclick="openTreatment()">＋ Log treatment</button>')}
+  ${table(['Patient','Treatment note','Assigned doctor','Status','Recorded','Action'],rows,'No treatment records yet.')}`
+}
+function billingPage(){
+  let rows=[...db.bills].reverse().map(b=>`<tr><td>${person(patient(b.patientId))}</td><td>${esc(b.description)}</td><td>${money(b.amount)}</td><td>${status(b.status)}</td><td>${new Date(b.createdAt).toLocaleDateString()}</td><td>${b.status==='Open'?`<button class="button" onclick="payBill(${b.id})">Mark paid</button>`:'—'}</td></tr>`).join('');
+  return `${pageHead('Billing','Record demo charges and update their payment status.','<button class="button primary" onclick="openBill()">＋ Create bill</button>')}
+  <div class="stats-grid">
+    ${stat('Open balance',money(db.bills.filter(b=>b.status==='Open').reduce((s,b)=>s+Number(b.amount),0)),'₹')}
+    ${stat('Paid total',money(db.bills.filter(b=>b.status==='Paid').reduce((s,b)=>s+Number(b.amount),0)),'✓')}
+    ${stat('Bills recorded',db.bills.length,'▤')}
+    ${stat('Patients',db.patients.length,'♙')}
+  </div>
+  ${table(['Patient','Description','Amount','Status','Date','Action'],rows,'No bills recorded.')}`
+}
+function reportsPage(){
+  let counts={Critical:0,Urgent:0,Routine:0};
+  db.triage.forEach(t=>counts[t.priority]=(counts[t.priority]||0)+1);
+  let max=Math.max(1,...Object.values(counts));
+  let bars=Object.entries(counts).map(([k,v])=>`<div class="bar-row"><span>${k} (entered)</span><div class="bar"><i style="width:${v/max*100}%"></i></div><b>${v}</b></div>`).join('');
+  let treatmentDone=db.treatments.filter(t=>t.status==='Completed').length;
+  return `${pageHead('Reports & analytics','A summary of records stored in this browser.','<button class="button" onclick="exportData()">⇩ Export JSON</button>')}
+  <div class="analytics">
+    <section class="panel"><div class="panel-header"><h3>Patient overview</h3><span class="subtle">All time</span></div><div class="kpi"><div><b>${db.patients.length}</b><span>Patients</span></div><div><b>${db.doctors.length}</b><span>Doctors</span></div><div><b>${db.triage.length}</b><span>Assessments</span></div></div></section>
+    <section class="panel"><div class="panel-header"><h3>Recorded triage priorities</h3><span class="subtle">User-entered labels</span></div>${bars}</section>
+    <section class="panel"><div class="panel-header"><h3>Treatment records</h3></div><div class="kpi"><div><b>${db.treatments.length}</b><span>Total logged</span></div><div><b>${treatmentDone}</b><span>Completed</span></div></div></section>
+    <section class="panel"><div class="panel-header"><h3>Billing summary</h3></div><div class="kpi"><div><b>${money(db.bills.filter(b=>b.status==='Paid').reduce((s,b)=>s+Number(b.amount),0))}</b><span>Paid</span></div><div><b>${money(db.bills.filter(b=>b.status==='Open').reduce((s,b)=>s+Number(b.amount),0))}</b><span>Open</span></div></div></section>
+  </div>
+  <p class="subtle" style="margin-top:13px">Reports include only data saved in this browser. This demo does not generate official financial or clinical reports.</p>`
+}
+function filterRows(input,id){
+  const q=input.value.toLowerCase();
+  document.querySelectorAll(`#${id} tbody tr`).forEach(r=>r.hidden=!r.innerText.toLowerCase().includes(q))
+}
+function modal(title,body,submit,label='Save'){
+  document.getElementById('modalRoot').innerHTML=`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><form class="modal" onsubmit="${submit};return false"><div class="modal-head"><h2>${title}</h2><button type="button" class="close" onclick="closeModal()">×</button></div>${body}<div class="modal-actions"><button type="button" class="button" onclick="closeModal()">Cancel</button><button class="button primary">${label}</button></div></form></div>`
+}
+function closeModal(){document.getElementById('modalRoot').innerHTML=''}
+function openPatient(id){
+  const p=id?patient(id):{};
+  modal(id?'Update patient':'Register patient',`<div class="form-grid">
+    <div class="field"><label>Patient ID *</label><input name="patientId" type="number" required min="1" value="${esc(p.patientId||'')}" ${id?'readonly':''}></div>
+    <div class="field"><label>Full name *</label><input name="patientName" required maxlength="80" value="${esc(p.patientName||'')}"></div>
+    <div class="field"><label>Age *</label><input name="age" type="number" required min="0" max="125" value="${esc(p.age??'')}"></div>
+    <div class="field"><label>Gender</label><select name="gender"><option ${p.gender==='Female'?'selected':''}>Female</option><option ${!p.gender||p.gender==='Male'?'selected':''}>Male</option><option ${p.gender==='Other'?'selected':''}>Other</option><option ${p.gender==='Prefer not to say'?'selected':''}>Prefer not to say</option></select></div>
+    <div class="field"><label>Blood group</label><select name="bloodGroup">${['','A+','A−','B+','B−','AB+','AB−','O+','O−','Unknown'].map(x=>`<option ${p.bloodGroup===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    <div class="field"><label>Mobile number</label><input name="mobileNumber" inputmode="numeric" pattern="[0-9]{7,15}" maxlength="15" value="${esc(p.mobileNumber||'')}" placeholder="7–15 digits"></div>
+  </div>`,id?`updatePatientForm(event)`:`addPatientForm(event)`)
+}
+function addPatientForm(e){
+  const f=new FormData(e.target),id=Number(f.get('patientId'));
+  if(patient(id)){notify('That patient ID is already in use.');return}
+  db.patients.push({patientId:id,patientName:f.get('patientName').trim(),age:Number(f.get('age')),gender:f.get('gender'),bloodGroup:f.get('bloodGroup'),mobileNumber:f.get('mobileNumber'),createdAt:new Date().toISOString()});
+  closeModal();save();notify('Patient registered.')
+}
+function updatePatientForm(e){
+  const f=new FormData(e.target),p=patient(f.get('patientId'));
+  if(!p)return;
+  p.patientName=f.get('patientName').trim();p.age=Number(f.get('age'));p.gender=f.get('gender');p.bloodGroup=f.get('bloodGroup');p.mobileNumber=f.get('mobileNumber');
+  closeModal();save();notify('Patient details updated.')
+}
+function editPatient(id){openPatient(id)}
+function openTriage(){
+  if(!db.patients.length){notify('Register a patient first.');return}
+  modal('Add triage record',`<div class="risk-note">Demo only: priority is entered by the user and is not a medical recommendation.</div>
+    <div class="field"><label>Patient *</label><select name="patientId" required>${options()}</select></div>
+    <div class="field"><label>Priority (entered by staff) *</label><select name="priority" required><option value="">Select priority</option><option>Critical</option><option>Urgent</option><option>Routine</option></select></div>
+    <div class="field"><label>Presenting concern *</label><input name="complaint" required maxlength="120" placeholder="Short, non-sensitive demo note"></div>
+    <div class="field"><label>Additional notes</label><textarea name="notes" maxlength="300"></textarea></div>`,`addTriageForm(event)`)
+}
+function addTriageForm(e){
+  let f=new FormData(e.target);
+  db.triage.push({id:Date.now(),patientId:Number(f.get('patientId')),priority:f.get('priority'),complaint:f.get('complaint').trim(),notes:f.get('notes').trim(),status:'Open',createdAt:new Date().toISOString()});
+  closeModal();save();notify('Demo triage record added.')
+}
+function completeTriage(id){
+  let t=db.triage.find(x=>x.id===id);t.status='Completed';save();notify('Queue status updated.')
+}
+function openDoctor(){
+  modal('Add doctor',`<div class="field"><label>Doctor name *</label><input name="name" required maxlength="80"></div>
+  <div class="field"><label>Specialty *</label><input name="specialty" required maxlength="80"></div>
+  <div class="field"><label>Phone</label><input name="phone" pattern="[0-9+ ()-]{7,18}" maxlength="18"></div>`,`addDoctorForm(event)`)
+}
+function addDoctorForm(e){
+  const f=new FormData(e.target);
+  db.doctors.push({id:Date.now(),name:f.get('name').trim(),specialty:f.get('specialty').trim(),phone:f.get('phone'),available:true});
+  closeModal();save();notify('Doctor added to roster.')
+}
+function toggleDoctor(id){
+  const d=db.doctors.find(x=>x.id===id);d.available=!d.available;save()
+}
+function openTreatment(){
+  if(!db.patients.length){notify('Register a patient first.');return}
+  modal('Log emergency treatment',`<div class="field"><label>Patient *</label><select name="patientId" required>${options()}</select></div>
+    <div class="field"><label>Assign doctor</label><select name="doctorId"><option value="">Unassigned</option>${db.doctors.filter(d=>d.available).map(d=>`<option value="${d.id}">${esc(d.name)} — ${esc(d.specialty)}</option>`).join('')}</select></div>
+    <div class="field"><label>Treatment note *</label><textarea name="description" required maxlength="240" placeholder="Demo record only"></textarea></div>`,`addTreatmentForm(event)`)
+}
+function addTreatmentForm(e){
+  const f=new FormData(e.target);
+  db.treatments.push({id:Date.now(),patientId:Number(f.get('patientId')),doctorId:f.get('doctorId'),description:f.get('description').trim(),status:'Assigned',createdAt:new Date().toISOString()});
+  closeModal();save();notify('Treatment record logged.')
+}
+function completeTreatment(id){
+  const t=db.treatments.find(x=>x.id===id);t.status='Completed';save();notify('Treatment marked complete.')
+}
+function openBill(){
+  if(!db.patients.length){notify('Register a patient first.');return}
+  modal('Create bill',`<div class="field"><label>Patient *</label><select name="patientId" required>${options()}</select></div>
+    <div class="field"><label>Description *</label><input name="description" required maxlength="120" placeholder="Service or charge description"></div>
+    <div class="field"><label>Amount (₹) *</label><input name="amount" type="number" min="0" max="10000000" step="0.01" required></div>`,`addBillForm(event)`)
+}
+function addBillForm(e){
+  const f=new FormData(e.target);
+  db.bills.push({id:Date.now(),patientId:Number(f.get('patientId')),description:f.get('description').trim(),amount:Number(f.get('amount')),status:'Open',createdAt:new Date().toISOString()});
+  closeModal();save();notify('Bill created.')
+}
+function payBill(id){
+  const b=db.bills.find(x=>x.id===id);b.status='Paid';save();notify('Bill marked paid.')
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='medicore-demo-data.json';a.click();URL.revokeObjectURL(a.href)
+}
+render();
+</script>
+</body>
+</html>
