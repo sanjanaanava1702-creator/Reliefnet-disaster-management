@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReliefNet - Disaster Resource Coordinator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 20px; text-align: center; border-bottom: 2px solid #ef4444; }
+  header h1 { color: #ef4444; font-size: 2em; letter-spacing: 2px; }
+  header p { color: #94a3b8; font-size: 0.95em; margin-top: 4px; }
+  .stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 15px; background: #1e293b; }
+  .stat-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 100px; }
+  .stat-card .num { font-size: 1.6em; font-weight: bold; color: #38bdf8; }
+  .stat-card .label { font-size: 0.75em; color: #94a3b8; text-transform: uppercase; }
+  nav { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; background: #1e293b; justify-content: center; }
+  nav button { background: #334155; color: #e2e8f0; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: 0.2s; }
+  nav button:hover { background: #475569; }
+  nav button.active { background: #ef4444; color: white; font-weight: bold; }
+  main { max-width: 1100px; margin: 20px auto; padding: 0 15px 60px; }
+  .panel { display: none; background: #1e293b; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
+  .panel.active { display: block; }
+  .panel h2 { color: #38bdf8; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 10px; }
+  .form-group label { display: block; font-size: 0.8em; color: #94a3b8; margin-bottom: 3px; }
+  .form-group input, .form-group select { width: 100%; padding: 8px 10px; background: #0f172a; border: 1px solid #334155; border-radius: 5px; color: #e2e8f0; font-size: 0.9em; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #38bdf8; }
+  .btn { background: #ef4444; color: white; border: none; padding: 9px 18px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em; transition: 0.2s; }
+  .btn:hover { background: #dc2626; }
+  .btn.blue { background: #0ea5e9; }
+  .btn.blue:hover { background: #0284c7; }
+  .btn.small { padding: 5px 10px; font-size: 0.8em; }
+  .btn.gray { background: #475569; }
+  .btn.gray:hover { background: #334155; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+  th, td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
+  th { color: #38bdf8; text-transform: uppercase; font-size: 0.75em; }
+  tr:hover { background: #0f172a; }
+  .status-pending { color: #facc15; }
+  .status-approved { color: #38bdf8; }
+  .status-delivered { color: #22c55e; }
+  .status-rejected { color: #ef4444; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 12px 20px; border-radius: 6px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 999; }
+  .toast.error { background: #ef4444; }
+  .toast.show { opacity: 1; }
+  .empty { color: #64748b; text-align: center; padding: 20px; font-style: italic; }
+  .action-row { display: flex; gap: 8px; }
+  .action-row button { padding: 4px 8px; font-size: 0.75em; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚨 ReliefNet</h1>
+  <p>Disaster Resource Coordinator</p>
+</header>
+
+<div class="stats">
+  <div class="stat-card"><div class="num" id="statDisasters">0</div><div class="label">Disasters</div></div>
+  <div class="stat-card"><div class="num" id="statVictims">0</div><div class="label">Victims</div></div>
+  <div class="stat-card"><div class="num" id="statVolunteers">0</div><div class="label">Volunteers</div></div>
+  <div class="stat-card"><div class="num" id="statResources">0</div><div class="label">Resources</div></div>
+  <div class="stat-card"><div class="num" id="statRequests">0</div><div class="label">Requests</div></div>
+</div>
+
+<nav id="nav">
+  <button class="active" data-panel="dashboard">Dashboard</button>
+  <button data-panel="disasters">Disasters</button>
+  <button data-panel="victims">Victims</button>
+  <button data-panel="volunteers">Volunteers</button>
+  <button data-panel="resources">Resources</button>
+  <button data-panel="requests">Relief Requests</button>
+  <button data-panel="analysis">Analysis</button>
+</nav>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section class="panel active" id="dashboard">
+    <h2>System Overview</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Recent Disasters</h3>
+        <table><thead><tr><th>ID</th><th>Type</th><th>Location</th><th>Severity</th></tr></thead><tbody id="dashDisasters"></tbody></table>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Resource Levels</h3>
+        <table><thead><tr><th>Resource</th><th>Qty</th><th>Location</th></tr></thead><tbody id="dashResources"></tbody></table>
+      </div>
+    </div>
+    <div style="margin-top:20px;">
+      <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Pending Requests</h3>
+      <table><thead><tr><th>ID</th><th>Victim</th><th>Resource</th><th>Qty</th><th>Status</th></tr></thead><tbody id="dashRequests"></tbody></table>
+    </div>
+    <div style="margin-top:15px; text-align:center;">
+      <button class="btn gray small" onclick="loadSampleData()">🔄 Load Sample Data</button>
+      <button class="btn gray small" onclick="clearAll()">🗑️ Clear All Data</button>
+    </div>
+  </section>
+
+  <!-- DISASTERS -->
+  <section class="panel" id="disasters">
+    <h2>Disaster Module</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Register Disaster</h3>
+        <div class="form-group"><label>Disaster ID</label><input type="number" id="disId" placeholder="e.g. 101"></div>
+        <div class="form-group"><label>Type</label>
+          <select id="disType"><option>Flood</option><option>Cyclone</option><option>Earthquake</option><option>Fire</option><option>Tsunami</option><option>Landslide</option></select>
+        </div>
+        <div class="form-group"><label>Location</label><input type="text" id="disLoc" placeholder="e.g. Vijayawada"></div>
+        <div class="form-group"><label>Severity</label>
+          <select id="disSev"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+        </div>
+        <button class="btn" onclick="addDisaster()">Register Disaster</button>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">All Disasters</h3>
+        <table><thead><tr><th>ID</th><th>Type</th><th>Location</th><th>Severity</th><th>Action</th></tr></thead><tbody id="disasterTable"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- VICTIMS -->
+  <section class="panel" id="victims">
+    <h2>Victim Module</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Register Victim</h3>
+        <div class="form-group"><label>Victim ID</label><input type="number" id="vicId" placeholder="e.g. 1"></div>
+        <div class="form-group"><label>Name</label><input type="text" id="vicName" placeholder="Full name"></div>
+        <div class="form-group"><label>Location</label><input type="text" id="vicLoc" placeholder="Affected location"></div>
+        <div class="form-group"><label>Required Resource</label>
+          <select id="vicNeed"><option>Food</option><option>Water</option><option>Medicine</option><option>Blanket</option><option>Clothes</option></select>
+        </div>
+        <button class="btn" onclick="addVictim()">Register Victim</button>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">All Victims</h3>
+        <table><thead><tr><th>ID</th><th>Name</th><th>Location</th><th>Needs</th><th>Action</th></tr></thead><tbody id="victimTable"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- VOLUNTEERS -->
+  <section class="panel" id="volunteers">
+    <h2>Volunteer Module</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Register Volunteer</h3>
+        <div class="form-group"><label>Volunteer ID</label><input type="number" id="volId" placeholder="e.g. 1"></div>
+        <div class="form-group"><label>Name</label><input type="text" id="volName" placeholder="Full name"></div>
+        <div class="form-group"><label>Phone (10 digits)</label><input type="text" id="volPhone" placeholder="9876543210" maxlength="10"></div>
+        <div class="form-group"><label>Assigned Area</label><input type="text" id="volArea" placeholder="Working area"></div>
+        <div class="form-group"><label>Available?</label>
+          <select id="volAvail"><option value="true">Yes</option><option value="false">No</option></select>
+        </div>
+        <button class="btn" onclick="addVolunteer()">Register Volunteer</button>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">All Volunteers</h3>
+        <table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Area</th><th>Avail</th><th>Action</th></tr></thead><tbody id="volunteerTable"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESOURCES -->
+  <section class="panel" id="resources">
+    <h2>Resource Module</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Add Resource</h3>
+        <div class="form-group"><label>Resource ID</label><input type="number" id="resId" placeholder="e.g. 1"></div>
+        <div class="form-group"><label>Resource Name</label>
+          <select id="resName"><option>Food</option><option>Water</option><option>Medicine</option><option>Blanket</option><option>Clothes</option></select>
+        </div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="resQty" placeholder="e.g. 500"></div>
+        <div class="form-group"><label>Storage Location</label><input type="text" id="resLoc" placeholder="Storage location"></div>
+        <button class="btn" onclick="addResource()">Add Resource</button>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">All Resources</h3>
+        <table><thead><tr><th>ID</th><th>Name</th><th>Quantity</th><th>Location</th><th>Action</th></tr></thead><tbody id="resourceTable"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- REQUESTS -->
+  <section class="panel" id="requests">
+    <h2>Relief Request Module</h2>
+    <div class="grid">
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">Create Request</h3>
+        <div class="form-group"><label>Request ID</label><input type="number" id="reqId" placeholder="e.g. 1"></div>
+        <div class="form-group"><label>Victim ID</label><input type="number" id="reqVic" placeholder="Victim ID"></div>
+        <div class="form-group"><label>Resource</label>
+          <select id="reqRes"><option>Food</option><option>Water</option><option>Medicine</option><option>Blanket</option><option>Clothes</option></select>
+        </div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="reqQty" placeholder="Required quantity"></div>
+        <button class="btn" onclick="createRequest()">Create Request</button>
+        <p style="font-size:0.8em; color:#94a3b8; margin-top:10px;">Requests are auto-processed: if stock is sufficient, they are approved & stock reduced; otherwise rejected.</p>
+      </div>
+      <div>
+        <h3 style="color:#94a3b8; margin-bottom:10px; font-size:0.95em;">All Requests</h3>
+        <table><thead><tr><th>ID</th><th>Victim</th><th>Resource</th><th>Qty</th><th>Status</th><th>Action</th></tr></thead><tbody id="requestTable"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYSIS -->
+  <section class="panel" id="analysis">
+    <h2>Report & Analysis</h2>
+    <div class="grid">
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">Total Resource Stock</div>
+        <div class="num" id="anTotalStock">0</div>
+      </div>
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">Most Affected Location</div>
+        <div class="num" id="anMostLoc" style="font-size:1.2em;">—</div>
+      </div>
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">Most Requested Resource</div>
+        <div class="num" id="anMostRes" style="font-size:1.2em;">—</div>
+      </div>
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">Available Volunteers</div>
+        <div class="num" id="anVolAvail">0 / 0</div>
+      </div>
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">High Risk Disasters</div>
+        <div class="num" id="anHighRisk">0</div>
+      </div>
+      <div class="stat-card" style="text-align:left; padding:20px;">
+        <div class="label">Total Requested Quantity</div>
+        <div class="num" id="anReqQty">0</div>
+      </div>
+    </div>
+    <h3 style="color:#94a3b8; margin:20px 0 10px; font-size:0.95em;">High Risk Disasters (High / Critical)</h3>
+    <table><thead><tr><th>ID</th><th>Type</th><th>Location</th><th>Severity</th></tr></thead><tbody id="anHighRiskTable"></tbody></table>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA STORE =====
+const store = {
+  disasters: [],
+  victims: [],
+  volunteers: [],
+  resources: [],
+  requests: []
+};
+
+// ===== HELPERS =====
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast' + (isError ? ' error' : ''), 2500);
+}
+
+function nextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== NAVIGATION =====
+document.querySelectorAll('#nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.panel).classList.add('active');
+    renderAll();
+  });
+});
+
+// ===== DISASTERS =====
+function addDisaster() {
+  const id = parseInt(document.getElementById('disId').value);
+  const type = document.getElementById('disType').value;
+  const loc = document.getElementById('disLoc').value.trim();
+  const sev = document.getElementById('disSev').value;
+
+  if (isNaN(id) || id <= 0) return toast('Disaster ID must be a positive number', true);
+  if (!loc) return toast('Location is required', true);
+  if (store.disasters.some(d => d.id === id)) return toast('Disaster ID already exists', true);
+
+  store.disasters.push({ id, type, location: loc, severity: sev });
+  document.getElementById('disId').value = '';
+  document.getElementById('disLoc').value = '';
+  toast('Disaster registered successfully!');
+  renderAll();
+}
+
+function deleteDisaster(id) {
+  store.disasters = store.disasters.filter(d => d.id !== id);
+  toast('Disaster deleted');
+  renderAll();
+}
+
+// ===== VICTIMS =====
+function addVictim() {
+  const id = parseInt(document.getElementById('vicId').value);
+  const name = document.getElementById('vicName').value.trim();
+  const loc = document.getElementById('vicLoc').value.trim();
+  const need = document.getElementById('vicNeed').value;
+
+  if (isNaN(id) || id <= 0) return toast('Victim ID must be a positive number', true);
+  if (!name) return toast('Victim name is required', true);
+  if (!loc) return toast('Location is required', true);
+  if (store.victims.some(v => v.id === id)) return toast('Victim ID already exists', true);
+
+  store.victims.push({ id, name, location: loc, need });
+  document.getElementById('vicId').value = '';
+  document.getElementById('vicName').value = '';
+  document.getElementById('vicLoc').value = '';
+  toast('Victim registered successfully!');
+  renderAll();
+}
+
+function deleteVictim(id) {
+  store.victims = store.victims.filter(v => v.id !== id);
+  toast('Victim deleted');
+  renderAll();
+}
+
+// ===== VOLUNTEERS =====
+function addVolunteer() {
+  const id = parseInt(document.getElementById('volId').value);
+  const name = document.getElementById('volName').value.trim();
+  const phone = document.getElementById('volPhone').value.trim();
+  const area = document.getElementById('volArea').value.trim();
+  const avail = document.getElementById('volAvail').value === 'true';
+
+  if (isNaN(id) || id <= 0) return toast('Volunteer ID must be a positive number', true);
+  if (!name) return toast('Volunteer name is required', true);
+  if (!/^\d{10}$/.test(phone)) return toast('Phone number must contain exactly 10 digits', true);
+  if (!area) return toast('Assigned area is required', true);
+  if (store.volunteers.some(v => v.id === id)) return toast('Volunteer ID already exists', true);
+
+  store.volunteers.push({ id, name, phone, area, available: avail });
+  document.getElementById('volId').value = '';
+  document.getElementById('volName').value = '';
+  document.getElementById('volPhone').value = '';
+  document.getElementById('volArea').value = '';
+  toast('Volunteer registered successfully!');
+  renderAll();
+}
+
+function deleteVolunteer(id) {
+  store.volunteers = store.volunteers.filter(v => v.id !== id);
+  toast('Volunteer deleted');
+  renderAll();
+}
+
+// ===== RESOURCES =====
+function addResource() {
+  const id = parseInt(document.getElementById('resId').value);
+  const name = document.getElementById('resName').value;
+  const qty = parseInt(document.getElementById('resQty').value);
+  const loc = document.getElementById('resLoc').value.trim();
+
+  if (isNaN(id) || id <= 0) return toast('Resource ID must be a positive number', true);
+  if (isNaN(qty) || qty <= 0) return toast('Quantity must be greater than zero', true);
+  if (!loc) return toast('Storage location is required', true);
+  if (store.resources.some(r => r.id === id)) return toast('Resource ID already exists', true);
+
+  store.resources.push({ id, name, quantity: qty, location: loc });
+  document.getElementById('resId').value = '';
+  document.getElementById('resQty').value = '';
+  document.getElementById('resLoc').value = '';
+  toast('Resource added successfully!');
+  renderAll();
+}
+
+function deleteResource(id) {
+  store.resources = store.resources.filter(r => r.id !== id);
+  toast('Resource deleted');
+  renderAll();
+}
+
+// ===== REQUESTS =====
+function createRequest() {
+  const id = parseInt(document.getElementById('reqId').value);
+  const victimId = parseInt(document.getElementById('reqVic').value);
+  const resource = document.getElementById('reqRes').value;
+  const qty = parseInt(document.getElementById('reqQty').value);
+
+  if (isNaN(id) || id <= 0) return toast('Request ID must be a positive number', true);
+  if (isNaN(victimId) || victimId <= 0) return toast('Victim ID is required', true);
+  if (isNaN(qty) || qty <= 0) return toast('Quantity must be greater than zero', true);
+  if (store.requests.some(r => r.id === id)) return toast('Request ID already exists', true);
+  if (!store.victims.some(v => v.id === victimId)) return toast('Victim ID not found', true);
+
+  // Auto-process: check stock
+  const res = store.resources.find(r => r.name.toLowerCase() === resource.toLowerCase());
+  let status = 'Rejected';
+  if (res && res.quantity >= qty) {
+    res.quantity -= qty;
+    status = 'Delivered';
+  }
+
+  store.requests.push({ id, victimId, resource, quantity: qty, status });
+  document.getElementById('reqId').value = '';
+  document.getElementById('reqVic').value = '';
+  document.getElementById('reqQty').value = '';
+
+  if (status === 'Delivered') {
+    toast(`Request delivered! ${qty} ${resource} allocated. Remaining: ${res.quantity}`);
+  } else {
+    toast(`Request rejected - insufficient ${resource} stock`, true);
+  }
+  renderAll();
+}
+
+function deleteRequest(id) {
+  store.requests = store.requests.filter(r => r.id !== id);
+  toast('Request deleted');
+  renderAll();
+}
+
+// ===== RENDER =====
+function renderAll() {
+  // Stats
+  document.getElementById('statDisasters').textContent = store.disasters.length;
+  document.getElementById('statVictims').textContent = store.victims.length;
+  document.getElementById('statVolunteers').textContent = store.volunteers.length;
+  document.getElementById('statResources').textContent = store.resources.length;
+  document.getElementById('statRequests').textContent = store.requests.length;
+
+  // Dashboard
+  document.getElementById('dashDisasters').innerHTML = store.disasters.slice(-5).map(d =>
+    `<tr><td>${d.id}</td><td>${esc(d.type)}</td><td>${esc(d.location)}</td><td>${esc(d.severity)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" class="empty">No disasters</td></tr>';
+
+  document.getElementById('dashResources').innerHTML = store.resources.map(r =>
+    `<tr><td>${esc(r.name)}</td><td>${r.quantity}</td><td>${esc(r.location)}</td></tr>`
+  ).join('') || '<tr><td colspan="3" class="empty">No resources</td></tr>';
+
+  document.getElementById('dashRequests').innerHTML = store.requests.filter(r => r.status === 'Pending').slice(0,5).map(r =>
+    `<tr><td>${r.id}</td><td>${r.victimId}</td><td>${esc(r.resource)}</td><td>${r.quantity}</td><td class="status-pending">${r.status}</td></tr>`
+  ).join('') || '<tr><td colspan="5" class="empty">No pending requests</td></tr>';
+
+  // Disasters table
+  document.getElementById('disasterTable').innerHTML = store.disasters.map(d =>
+    `<tr><td>${d.id}</td><td>${esc(d.type)}</td><td>${esc(d.location)}</td><td>${esc(d.severity)}</td>
+     <td><button class="btn small gray" onclick="deleteDisaster(${d.id})">Del</button></td></tr>`
+  ).join('') || '<tr><td colspan="5" class="empty">No disasters registered</td></tr>';
+
+  // Victims table
+  document.getElementById('victimTable').innerHTML = store.victims.map(v =>
+    `<tr><td>${v.id}</td><td>${esc(v.name)}</td><td>${esc(v.location)}</td><td>${esc(v.need)}</td>
+     <td><button class="btn small gray" onclick="deleteVictim(${v.id})">Del</button></td></tr>`
+  ).join('') || '<tr><td colspan="5" class="empty">No victims registered</td></tr>';
+
+  // Volunteers table
+  document.getElementById('volunteerTable').innerHTML = store.volunteers.map(v =>
+    `<tr><td>${v.id}</td><td>${esc(v.name)}</td><td>${esc(v.phone)}</td><td>${esc(v.area)}</td>
+     <td>${v.available ? '✅' : '❌'}</td>
+     <td><button class="btn small gray" onclick="deleteVolunteer(${v.id})">Del</button></td></tr>`
+  ).join('') || '<tr><td colspan="6" class="empty">No volunteers registered</td></tr>';
+
+  // Resources table
+  document.getElementById('resourceTable').innerHTML = store.resources.map(r =>
+    `<tr><td>${r.id}</td><td>${esc(r.name)}</td><td><strong>${r.quantity}</strong></td><td>${esc(r.location)}</td>
+     <td><button class="btn small gray" onclick="deleteResource(${r.id})">Del</button></td></tr>`
+  ).join('') || '<tr><td colspan="5" class="empty">No resources added</td></tr>';
+
+  // Requests table
+  document.getElementById('requestTable').innerHTML = store.requests.map(r => {
+    const cls = 'status-' + r.status.toLowerCase();
+    return `<tr><td>${r.id}</td><td>${r.victimId}</td><td>${esc(r.resource)}</td><td>${r.quantity}</td>
+      <td class="${cls}">${r.status}</td>
+      <td><button class="btn small gray" onclick="deleteRequest(${r.id})">Del</button></td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty">No requests created</td></tr>';
+
+  renderAnalysis();
+}
+
+// ===== ANALYSIS =====
+function renderAnalysis() {
+  // Total stock
+  const totalStock = store.resources.reduce((s, r) => s + r.quantity, 0);
+  document.getElementById('anTotalStock').textContent = totalStock;
+
+  // Most affected location
+  const locCount = {};
+  store.victims.forEach(v => locCount[v.location] = (locCount[v.location] || 0) + 1);
+  const mostLoc = Object.entries(locCount).sort((a,b) => b[1] - a[1])[0];
+  document.getElementById('anMostLoc').textContent = mostLoc ? `${mostLoc[0]} (${mostLoc[1]})` : '—';
+
+  // Most requested resource
+  const resCount = {};
+  store.requests.forEach(r => resCount[r.resource] = (resCount[r.resource] || 0) + r.quantity);
+  const mostRes = Object.entries(resCount).sort((a,b) => b[1] - a[1])[0];
+  document.getElementById('anMostRes').textContent = mostRes ? `${mostRes[0]} (${mostRes[1]} units)` : '—';
+
+  // Volunteers
+  const avail = store.volunteers.filter(v => v.available).length;
+  document.getElementById('anVolAvail').textContent = `${avail} / ${store.volunteers.length}`;
+
+  // High risk
+  const highRisk = store.disasters.filter(d => ['High', 'Critical'].includes(d.severity));
+  document.getElementById('anHighRisk').textContent = highRisk.length;
+
+  // Total requested qty
+  const totalReq = store.requests.reduce((s, r) => s + r.quantity, 0);
+  document.getElementById('anReqQty').textContent = totalReq;
+
+  // High risk table
+  document.getElementById('anHighRiskTable').innerHTML = highRisk.map(d =>
+    `<tr><td>${d.id}</td><td>${esc(d.type)}</td><td>${esc(d.location)}</td><td style="color:#ef4444">${esc(d.severity)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" class="empty">No high-risk disasters</td></tr>';
+}
+
+// ===== SAMPLE DATA =====
+function loadSampleData() {
+  store.disasters = [
+    { id: 101, type: 'Flood', location: 'Vijayawada', severity: 'High' },
+    { id: 102, type: 'Cyclone', location: 'Machilipatnam', severity: 'Critical' }
+  ];
+  store.victims = [
+    { id: 1, name: 'Ravi', location: 'Vijayawada', need: 'Food' },
+    { id: 2, name: 'Anita', location: 'Machilipatnam', need: 'Medicine' },
+    { id: 3, name: 'Lakshmi', location: 'Guntur', need: 'Water' }
+  ];
+  store.volunteers = [
+    { id: 1, name: 'Arjun', phone: '9876543210', area: 'Vijayawada', available: true },
+    { id: 2, name: 'Priya', phone: '9876501234', area: 'Guntur', available: false },
+    { id: 3, name: 'Kiran', phone: '9123456780', area: 'Guntur', available: true }
+  ];
+  store.resources = [
+    { id: 1, name: 'Food', quantity: 500, location: 'Vijayawada' },
+    { id: 2, name: 'Medicine', quantity: 100, location: 'Machilipatnam' },
+    { id: 3, name: 'Water', quantity: 300, location: 'Guntur' }
+  ];
+  store.requests = [
+    { id: 1, victimId: 1, resource: 'Food', quantity: 50, status: 'Pending' },
+    { id: 2, victimId: 2, resource: 'Medicine', quantity: 30, status: 'Approved' }
+  ];
+  toast('Sample data loaded!');
+  renderAll();
+}
+
+function clearAll() {
+  store.disasters = [];
+  store.victims = [];
+  store.volunteers = [];
+  store.resources = [];
+  store.requests = [];
+  toast('All data cleared');
+  renderAll();
+}
+
+// Initialize
+renderAll();
+loadSampleData();
+</script>
+</body>
+</html>
